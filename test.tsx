@@ -19,23 +19,22 @@ const CheckboxFilter: React.FC<CheckboxFilterProps> = (props) => {
   const onChange = (event: React.ChangeEvent<HTMLInputElement>) => {
     const newFilter = event.target.value;
     setFilter(newFilter);
-
-    // If "Yes" is selected, get all checked rows
-    if (newFilter === 'yes') {
-      getCheckedRows();
-    }
-  };
-
-  const getCheckedRows = () => {
-    const selectedNodes = props.api.getSelectedNodes();
-    const checkedRows = selectedNodes.map((node: any) => node.data); // Adjust 'any' to the specific type if known
-    console.log('Checked rows:', checkedRows);
+    props.api.onFilterChanged();
   };
 
   const doesFilterPass = (params: any) => { // Adjust 'any' to the specific type if known
     if (filter === null) return true;
-    const isChecked = props.api.getSelectedNodes().some((node: any) => node.data === params.data); // Adjust 'any' to the specific type if known
-    return filter === 'yes' ? isChecked : !isChecked;
+
+    const selectedNodes = props.api.getSelectedNodes();
+    const selectedRowIds = selectedNodes.map((node: any) => node.data.id); // Use a unique identifier for rows
+
+    if (filter === 'yes') {
+      return selectedRowIds.includes(params.data.id);
+    } else if (filter === 'no') {
+      return !selectedRowIds.includes(params.data.id);
+    }
+    
+    return true;
   };
 
   const isFilterActive = () => {
