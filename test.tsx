@@ -1,19 +1,28 @@
 import React, { useEffect, useState } from 'react';
 
-const CheckboxFilter = (props) => {
-  const [filter, setFilter] = useState(null);
+interface CheckboxFilterProps {
+  api: any; // Adjust 'any' to the specific type if known
+  filterChangedCallback: () => void;
+}
+
+interface FilterModel {
+  filter: string | null;
+}
+
+const CheckboxFilter: React.FC<CheckboxFilterProps> = (props) => {
+  const [filter, setFilter] = useState<string | null>(null);
 
   useEffect(() => {
     props.filterChangedCallback();
   }, [filter]);
 
-  const onChange = (event) => {
+  const onChange = (event: React.ChangeEvent<HTMLInputElement>) => {
     setFilter(event.target.value);
   };
 
-  const doesFilterPass = (params) => {
+  const doesFilterPass = (params: any) => { // Adjust 'any' to the specific type if known
     if (filter === null) return true;
-    const isChecked = props.api.getSelectedNodes().some(node => node.data === params.data);
+    const isChecked = props.api.getSelectedNodes().some((node: any) => node.data === params.data); // Adjust 'any' to the specific type if known
     return filter === 'yes' ? isChecked : !isChecked;
   };
 
@@ -21,11 +30,11 @@ const CheckboxFilter = (props) => {
     return filter !== null;
   };
 
-  const getModel = () => {
+  const getModel = (): FilterModel => {
     return { filter };
   };
 
-  const setModel = (model) => {
+  const setModel = (model: FilterModel | null) => {
     setFilter(model ? model.filter : null);
   };
 
