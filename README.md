@@ -1,20 +1,20 @@
 import React, { useEffect, useState } from 'react';
 
-const CheckboxFilter = props => {
+const CheckboxFilter = (props) => {
   const [filter, setFilter] = useState(null);
 
   useEffect(() => {
     props.filterChangedCallback();
   }, [filter]);
 
-  const onChange = event => {
+  const onChange = (event) => {
     setFilter(event.target.value);
   };
 
-  const doesFilterPass = params => {
+  const doesFilterPass = (params) => {
     if (filter === null) return true;
-    const { checked } = params.data;
-    return filter === 'yes' ? checked : !checked;
+    const isChecked = props.api.getSelectedNodes().some(node => node.data === params.data);
+    return filter === 'yes' ? isChecked : !isChecked;
   };
 
   const isFilterActive = () => {
@@ -25,7 +25,7 @@ const CheckboxFilter = props => {
     return { filter };
   };
 
-  const setModel = model => {
+  const setModel = (model) => {
     setFilter(model ? model.filter : null);
   };
 
