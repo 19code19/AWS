@@ -17,7 +17,19 @@ const CheckboxFilter: React.FC<CheckboxFilterProps> = (props) => {
   }, [filter]);
 
   const onChange = (event: React.ChangeEvent<HTMLInputElement>) => {
-    setFilter(event.target.value);
+    const newFilter = event.target.value;
+    setFilter(newFilter);
+
+    // If "Yes" is selected, get all checked rows
+    if (newFilter === 'yes') {
+      getCheckedRows();
+    }
+  };
+
+  const getCheckedRows = () => {
+    const selectedNodes = props.api.getSelectedNodes();
+    const checkedRows = selectedNodes.map((node: any) => node.data); // Adjust 'any' to the specific type if known
+    console.log('Checked rows:', checkedRows);
   };
 
   const doesFilterPass = (params: any) => { // Adjust 'any' to the specific type if known
