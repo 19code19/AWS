@@ -1,33 +1,58 @@
-using System;
-using System.Threading;
+import React, { useEffect, useState } from 'react';
 
-class Program
-{
-    static void Main(string[] args)
-    {
-        ScheduleJob();
-    }
+const CheckboxFilter = props => {
+  const [filter, setFilter] = useState(null);
 
-    static void ScheduleJob()
-    {
-        // Calculate the time until the next 5 PM
-        DateTime now = DateTime.Now;
-        DateTime nextRunTime = now.Date.AddDays(1).AddHours(17); // Tomorrow 5 PM
+  useEffect(() => {
+    props.filterChangedCallback();
+  }, [filter]);
 
-        TimeSpan timeUntilNextRun = nextRunTime - now;
+  const onChange = event => {
+    setFilter(event.target.value);
+  };
 
-        // Create a timer to run the job at the calculated time
-        Timer timer = new Timer(RunJob, null, timeUntilNextRun, TimeSpan.FromDays(1)); // Repeat daily
+  const doesFilterPass = params => {
+    if (filter === null) return true;
+    const { checked } = params.data;
+    return filter === 'yes' ? checked : !checked;
+  };
 
-        Console.WriteLine($"Job scheduled. Next run time: {nextRunTime}");
+  const isFilterActive = () => {
+    return filter !== null;
+  };
 
-        // Keep the application running
-        Console.ReadLine();
-    }
+  const getModel = () => {
+    return { filter };
+  };
 
-    static void RunJob(object state)
-    {
-        // Your job logic goes here
-        Console.WriteLine("Job is running at: " + DateTime.Now);
-    }
-}
+  const setModel = model => {
+    setFilter(model ? model.filter : null);
+  };
+
+  return (
+    <div>
+      <label>
+        <input
+          type="radio"
+          name="filter"
+          value="yes"
+          checked={filter === 'yes'}
+          onChange={onChange}
+        />
+        Yes
+      </label>
+      <label>
+        <input
+          type="radio"
+          name="filter"
+          value="no"
+          checked={filter === 'no'}
+          onChange={onChange}
+        />
+        No
+      </label>
+    </div>
+  );
+};
+
+export default CheckboxFilter;
