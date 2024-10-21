@@ -1,38 +1,65 @@
-using Moq;
-using System.Net;
-using System.Net.Http;
-using System.Threading;
-using System.Threading.Tasks;
-using Xunit;
+import React, { useEffect } from 'react';
+import ReactDOM from 'react-dom';
+import { createMemoryHistory } from 'history';
+import useBlockHistoryPop from './useBlockHistoryPop';
 
-public class HttpClientHelperTests
-{
-    [Fact]
-    public async Task PostAsync_ShouldReturnSuccessResponse()
-    {
-        // Arrange
-        var mockHandler = new Mock<HttpMessageHandler>();
-        var httpClient = new HttpClient(mockHandler.Object);
-        var requestUri = "https://example.com/api/test";
-        var content = new StringContent("{'key':'value'}", System.Text.Encoding.UTF8, "application/json");
+// A helper component to use the hook in a testing scenario
+const TestComponent = ({ history }) => {
+  useBlockHistoryPop(history);
+  return null;
+};
 
-        // Setup mock to return a specific response when a POST request is made
-        mockHandler
-            .Setup(m => m.SendAsync(It.Is<HttpRequestMessage>(req => req.Method == HttpMethod.Post), It.IsAny<CancellationToken>()))
-            .ReturnsAsync(new HttpResponseMessage
-            {
-                StatusCode = HttpStatusCode.OK,
-                Content = new StringContent("{'result':'success'}")
-            });
+describe('useBlockHistoryPop', () => {
+  let history;
+  let unblockMock;
+  let container;
 
-        var httpClientHelper = new HttpClientHelper(httpClient); // Your custom helper class that uses HttpClient
+  beforeEach(() => {
+    history = createMemoryHistory();
+    unblockMock = jest.fn();
+    history.block = jest.fn().mockReturnValue(unblockMock);
 
-        // Act
-        var response = await httpClientHelper.PostAsync(requestUri, content);
+    // Set up a DOM container for rendering
+    container = document.createElement('div');
+    document.body.appendChild(container);
+  });
 
-        // Assert
-        Assert.Equal(HttpStatusCode.OK, response.StatusCode);
-        var responseBody = await response.Content.ReadAsStringAsync();
-        Assert.Contains("success", responseBody);
-    }
-}
+  afterEach(() => {
+    // Clean up the DOM container after each test
+    ReactDOM.unmountComponentAtNode(container);
+    document.body.removeChild(container);
+  });
+
+  it('should block history on POP action', () => {
+    ReactDOM.render(<TestComponent history={history} />, container);
+
+    // Expect history.block to be called with a function
+    expect(history.block).toHaveBeenCalledWith(expect.any(Function));
+  });
+
+  it('should unblock when the component is unmounted', () => {
+    ReactDOM.render(<TestComponent history={history} />, container);
+
+    // Unmount the component and check unblock is called
+    ReactDOM.unmountComponentAtNode(container);
+    expect(unblockMock).toHaveBeenCalled();
+  });
+
+  it('should return false when action is POP', () => {
+    ReactDOM.render(<TestComponent history={history} />, container);
+
+    const blockerFunction = history.block.mock.calls[0][0];
+    const result = blockerFunction('/somepath', 'POP');
+    
+    expect(result).toBe(false);
+  });
+
+  it('should allow other actions', () => {
+    ReactDOM.render(<TestComponent history={history} />, container);
+
+    const blockerFunction = history.block.mock.calls[0][0];
+    const result = blockerFunction('/somepath', 'PUSH');
+
+    expect(result).toBeUndefined();  // Undefined means no block.
+  });
+});
