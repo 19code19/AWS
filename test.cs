@@ -1,60 +1,55 @@
-using CodeFirst.Data;
-using Microsoft.AspNetCore.Http;
-using Microsoft.AspNetCore.Mvc;
+using Newtonsoft.Json;
 
-namespace CodeFirst.Controllers
+namespace ConsoleApp1
 {
-    [Route("api/[controller]")]
-    [ApiController]
-    public class PersonController : ControllerBase
+    internal class Program
     {
-        private readonly AdventureWorks adventureWorks;
-        IEnumerable<string> enumerableApproach = new List<string> { "SC", "EM" };
-
-        public PersonController()
+        static void Main(string[] args)
         {
-            this.adventureWorks = new AdventureWorks();
-        }
+            Child child = new()
+            {
+                Description = "Description",
+                Id = 1,
+                Name = "Name",
+                Type = "Type"
+            };
 
-        [HttpGet]
-        public IActionResult GetAll()
+            Base baseClass = new()
+            {
+                Description = "Description",
+                Id = 1,
+                Name = "Name",
+                Type = "Type"
+            };
+
+            // Serialize objects with formatting
+            var data = JsonConvert.SerializeObject(child, Formatting.Indented);
+            var data2 = JsonConvert.SerializeObject(baseClass, Formatting.Indented);
+
+            Console.WriteLine(data);
+            Console.WriteLine(data2);
+        }
+    }
+
+    public class Child : Base
+    {
+        // If you want to override serialization behavior, you can use this
+        [JsonProperty("Type")]
+        public string Type { get; set; }
+
+        public bool ShouldSerializeType()
         {
-            // Enumerable Approach
-
-            var enumerableApproachData = this.adventureWorks.Person.Where(x => enumerableApproach.Contains(x.PersonType)); // OPENJSON
-
-            // List Approach
-            IEnumerable<string> listApproach = new List<string> { "SC", "EM" };
-            
-            var listApproachData = this.adventureWorks.Person.Where(x => listApproach.ToList().Contains(x.PersonType)); // OPENJSON
-
-            List<string> listApproach2 = listApproach.ToList();
-
-            var listApproachData2 = this.adventureWorks.Person.Where(x => listApproach2.Contains(x.PersonType)); // OPENJSON
-
-            List<string> listApproach3 = new List<string> { "SC", "EM" };
-            var listApproachData3 = this.adventureWorks.Person.Where(x => listApproach3.Contains(x.PersonType)); //OPENJSON
-
-            var listApproachData4 = this.adventureWorks.Person.Where(x => new List<string> { "SC", "EM" }.Contains(x.PersonType)); //IN
-
-
-            var listApproachData5 = this.adventureWorks.Person.Where(x => GetData().Contains(x.PersonType)); //IN
-
-
-            var arrayApproachData = this.adventureWorks.Person.Where(x => listApproach.ToArray().Contains(x.PersonType)); // OPENJSON
-
-
-            return Ok(new List<string> { "Test"});
+            return false; // This will prevent serialization of 'Type' in Child
         }
+    }
 
-        private List<string>  GetData ()
-        {
-            var list =  new List<string> {};
+    public class Base
+    {
+        public int Id { get; set; }
+        public string Name { get; set; }
+        public string Description { get; set; }
 
-            foreach (var item in enumerableApproach)
-                list.Add(item);
-
-            return list;
-        }
+        // You can choose whether or not to make 'Type' serialized in the base class
+        public string Type { get; set; }
     }
 }
