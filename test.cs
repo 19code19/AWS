@@ -1,51 +1,68 @@
-using Confluent.Kafka;
 using System;
+using System.Collections.Generic;
 using System.Net.Http;
 using System.Text.Json;
 using System.Threading.Tasks;
-
-//dotnet add package Confluent.Kafka
+using Confluent.Kafka;
 
 class Program
 {
     static async Task Main(string[] args)
     {
-        var config = new ProducerConfig
+        try
         {
-            BootstrapServers = "your-kafka-broker:9092",
-            SaslMechanism = SaslMechanism.OAuthBearer,
-            SecurityProtocol = SecurityProtocol.SaslSsl,
-            SaslOauthbearerTokenProvider = async () => await GetOAuthTokenAsync()
-        };
+            // Fetch OAuth Token
+            string oauthToken = await FetchOAuthTokenAsync();
 
-        using var producer = new ProducerBuilder<string, string>(config).Build();
-
-        Console.WriteLine("Enter a message to send to Kafka (type 'exit' to quit):");
-        while (true)
-        {
-            var message = Console.ReadLine();
-            if (message?.ToLower() == "exit") break;
-
-            try
+            // Kafka Producer Configuration
+            var producerConfig = new ProducerConfig
             {
-                var deliveryResult = await producer.ProduceAsync("your-topic-name", new Message<string, string>
+                BootstrapServers = "your-kafka-broker:9092",
+                SecurityProtocol = SecurityProtocol.SaslSsl,
+                SaslMechanism = SaslMechanism.OAuthBearer,
+                // Set the OAuth token dynamically
+                SaslOauthbearerConfig = $"token={oauthToken}"
+            };
+
+            // Create the Kafka Producer using ProducerBuilder
+            using var producer = new ProducerBuilder<string, string>(producerConfig).Build();
+
+            Console.WriteLine("Enter messages to send to Kafka (type 'exit' to quit):");
+
+            while (true)
+            {
+                string input = Console.ReadLine();
+                if (input?.ToLower() == "exit")
+                    break;
+
+                try
                 {
-                    Key = Guid.NewGuid().ToString(),
-                    Value = message
-                });
+                    // Send message to Kafka
+                    var result = await producer.ProduceAsync("your-topic-name", new Message<string, string>
+                    {
+                        Key = Guid.NewGuid().ToString(), // Optional: Use GUID as key
+                        Value = input
+                    });
 
-                Console.WriteLine($"Delivered to: {deliveryResult.TopicPartitionOffset}");
+                    Console.WriteLine($"Message sent to {result.TopicPartitionOffset}");
+                }
+                catch (ProduceException<string, string> ex)
+                {
+                    Console.WriteLine($"Delivery failed: {ex.Error.Reason}");
+                }
             }
-            catch (ProduceException<string, string> ex)
-            {
-                Console.WriteLine($"Error: {ex.Error.Reason}");
-            }
+        }
+        catch (Exception ex)
+        {
+            Console.WriteLine($"Error: {ex.Message}");
         }
     }
 
-    private static async Task<string> GetOAuthTokenAsync()
+    /// <summary>
+    /// Fetches an OAuth token from an external OAuth provider.
+    /// </summary>
+    private static async Task<string> FetchOAuthTokenAsync()
     {
-        // Replace with your OAuth token provider details
         var clientId = "your-client-id";
         var clientSecret = "your-client-secret";
         var tokenEndpoint = "https://your-oauth-provider.com/token";
@@ -61,18 +78,27 @@ class Program
             })
         };
 
-        var response = await httpClient.SendAsync(request);
+        HttpResponseMessage response = await httpClient.SendAsync(request);
+
         if (!response.IsSuccessStatusCode)
         {
-            throw new Exception($"Failed to fetch OAuth token. Status code: {response.StatusCode}");
+            throw new Exception($"Failed to fetch OAuth token. HTTP Status: {response.StatusCode}");
         }
 
-        var responseContent = await response.Content.ReadAsStringAsync();
+        string responseContent = await response.Content.ReadAsStringAsync();
         var tokenResponse = JsonSerializer.Deserialize<OAuthTokenResponse>(responseContent);
 
-        return tokenResponse?.AccessToken ?? throw new Exception("Access token not found in response.");
+        if (string.IsNullOrEmpty(tokenResponse?.AccessToken))
+        {
+            throw new Exception("Access token not found in OAuth response.");
+        }
+
+        return tokenResponse.AccessToken;
     }
 
+    /// <summary>
+    /// Class to deserialize the OAuth token response.
+    /// </summary>
     private class OAuthTokenResponse
     {
         public string AccessToken { get; set; }
