@@ -4,6 +4,8 @@ using System.Net.Http;
 using System.Text.Json;
 using System.Threading.Tasks;
 
+//dotnet add package Confluent.Kafka
+
 class Program
 {
     static async Task Main(string[] args)
