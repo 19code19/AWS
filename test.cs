@@ -1,58 +1,64 @@
-{
-  "$schema": "http://json-schema.org/draft-07/schema#",
-  "type": "object",
-  "properties": {
-    "id": { "type": "integer" },
-    "name": { "type": "string" }
-  },
-  "required": ["id", "name"]
-}
-
-
 using System;
-using System.Threading.Tasks;
-using Confluent.Kafka;
-using Confluent.SchemaRegistry;
-using Confluent.SchemaRegistry.Serdes;
+using System.IO;
+using Avro;
+using Avro.IO;
+using Avro.Specific;
+using Avro.Generic;
 
-class KafkaProducerWithSchemaRegistry
+class Program
 {
-    static async Task Main(string[] args)
+    static void Main(string[] args)
     {
-        var schemaRegistryConfig = new SchemaRegistryConfig
+        // Define Avro schema as JSON string
+        var schemaJson = @"
         {
-            Url = "http://localhost:8081" // URL of your Schema Registry
+          ""type"": ""record"",
+          ""name"": ""User"",
+          ""fields"": [
+            { ""name"": ""id"", ""type"": ""int"" },
+            { ""name"": ""name"", ""type"": ""string"" }
+          ]
+        }";
+
+        // Parse the schema
+        var schema = Schema.Parse(schemaJson);
+
+        // Create valid and invalid data
+        var validData = new GenericRecord((RecordSchema)schema)
+        {
+            { "id", 1 },
+            { "name", "Alice" }
         };
 
-        var producerConfig = new ProducerConfig
+        var invalidData = new GenericRecord((RecordSchema)schema)
         {
-            BootstrapServers = "localhost:9092" // Kafka broker
+            { "id", "invalid" }, // Invalid type
+            { "name", 123 }      // Invalid type
         };
 
-        using var schemaRegistry = new CachedSchemaRegistryClient(schemaRegistryConfig);
-        using var producer = new ProducerBuilder<string, dynamic>(producerConfig)
-            .SetValueSerializer(new JsonSerializer<dynamic>(schemaRegistry))
-            .Build();
+        // Validate valid data
+        ValidateData(schema, validData);
 
-        var message = new
-        {
-            id = 1,
-            name = "John Doe"
-        };
+        // Validate invalid data
+        ValidateData(schema, invalidData);
+    }
 
+    static void ValidateData(Schema schema, GenericRecord data)
+    {
         try
         {
-            var result = await producer.ProduceAsync("your-topic-name", new Message<string, dynamic>
+            // Serialize the data to validate
+            using (var stream = new MemoryStream())
             {
-                Key = Guid.NewGuid().ToString(),
-                Value = message
-            });
-
-            Console.WriteLine($"Message sent to partition {result.Partition} with offset {result.Offset}");
+                var writer = new BinaryEncoder(stream);
+                var datumWriter = new GenericWriter<GenericRecord>(schema);
+                datumWriter.Write(data, writer);
+                Console.WriteLine("Data is valid.");
+            }
         }
-        catch (ProduceException<string, dynamic> ex)
+        catch (Exception ex)
         {
-            Console.WriteLine($"Message failed: {ex.Message}");
+            Console.WriteLine($"Validation failed: {ex.Message}");
         }
     }
 }
