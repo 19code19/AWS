@@ -3,57 +3,53 @@ using System.IO;
 using Avro;
 using Avro.IO;
 using Avro.Specific;
-using Avro.Generic;
+
+public class Employee
+{
+    public int Id { get; set; }
+    public string Name { get; set; }
+}
 
 class Program
 {
     static void Main(string[] args)
     {
-        // Define Avro schema as JSON string
+        // Avro schema for Employee
         var schemaJson = @"
         {
           ""type"": ""record"",
-          ""name"": ""User"",
+          ""name"": ""Employee"",
           ""fields"": [
-            { ""name"": ""id"", ""type"": ""int"" },
-            { ""name"": ""name"", ""type"": ""string"" }
+            { ""name"": ""Id"", ""type"": ""int"" },
+            { ""name"": ""Name"", ""type"": ""string"" }
           ]
         }";
 
         // Parse the schema
-        var schema = Schema.Parse(schemaJson);
+        var schema = (RecordSchema)Schema.Parse(schemaJson);
 
-        // Create valid and invalid data
-        var validData = new GenericRecord((RecordSchema)schema)
+        // Create an instance of Employee
+        var employee = new Employee
         {
-            { "id", 1 },
-            { "name", "Alice" }
+            Id = 1,
+            Name = "Alice"
         };
 
-        var invalidData = new GenericRecord((RecordSchema)schema)
-        {
-            { "id", "invalid" }, // Invalid type
-            { "name", 123 }      // Invalid type
-        };
-
-        // Validate valid data
-        ValidateData(schema, validData);
-
-        // Validate invalid data
-        ValidateData(schema, invalidData);
+        // Validate the Employee instance against the schema
+        ValidateEmployee(schema, employee);
     }
 
-    static void ValidateData(Schema schema, GenericRecord data)
+    static void ValidateEmployee(RecordSchema schema, Employee employee)
     {
         try
         {
-            // Serialize the data to validate
+            // Serialize the Employee instance
             using (var stream = new MemoryStream())
             {
-                var writer = new BinaryEncoder(stream);
-                var datumWriter = new GenericWriter<GenericRecord>(schema);
-                datumWriter.Write(data, writer);
-                Console.WriteLine("Data is valid.");
+                var encoder = new BinaryEncoder(stream);
+                var writer = new SpecificWriter<Employee>(schema);
+                writer.Write(employee, encoder); // Validate here
+                Console.WriteLine("Employee data is valid.");
             }
         }
         catch (Exception ex)
