@@ -1,0 +1,86 @@
+{
+  "Version": 1,
+  "WorkspaceRootPath": "C:\\Users\\bswjt\\source\\repos\\AWS\\WebApplication1\\",
+  "Documents": [
+    {
+      "AbsoluteMoniker": "D:0:0:{1A3386BB-2299-4448-B834-1B315585650A}|WebApplication1.csproj|c:\\users\\bswjt\\source\\repos\\aws\\webapplication1\\oracledatamigrationservice.cs||{A6C744A8-0E4A-4FC6-886A-064283054674}",
+      "RelativeMoniker": "D:0:0:{1A3386BB-2299-4448-B834-1B315585650A}|WebApplication1.csproj|solutionrelative:oracledatamigrationservice.cs||{A6C744A8-0E4A-4FC6-886A-064283054674}"
+    },
+    {
+      "AbsoluteMoniker": "D:0:0:{1A3386BB-2299-4448-B834-1B315585650A}|WebApplication1.csproj|c:\\users\\bswjt\\source\\repos\\aws\\webapplication1\\program.cs||{A6C744A8-0E4A-4FC6-886A-064283054674}",
+      "RelativeMoniker": "D:0:0:{1A3386BB-2299-4448-B834-1B315585650A}|WebApplication1.csproj|solutionrelative:program.cs||{A6C744A8-0E4A-4FC6-886A-064283054674}"
+    },
+    {
+      "AbsoluteMoniker": "D:0:0:{1A3386BB-2299-4448-B834-1B315585650A}|WebApplication1.csproj|c:\\users\\bswjt\\source\\repos\\aws\\webapplication1\\tablemigrationconfig.cs||{A6C744A8-0E4A-4FC6-886A-064283054674}",
+      "RelativeMoniker": "D:0:0:{1A3386BB-2299-4448-B834-1B315585650A}|WebApplication1.csproj|solutionrelative:tablemigrationconfig.cs||{A6C744A8-0E4A-4FC6-886A-064283054674}"
+    },
+    {
+      "AbsoluteMoniker": "D:0:0:{1A3386BB-2299-4448-B834-1B315585650A}|WebApplication1.csproj|c:\\users\\bswjt\\source\\repos\\aws\\webapplication1\\migrationconfig.json||{90A6B3A7-C1A3-4009-A288-E2FF89E96FA0}",
+      "RelativeMoniker": "D:0:0:{1A3386BB-2299-4448-B834-1B315585650A}|WebApplication1.csproj|solutionrelative:migrationconfig.json||{90A6B3A7-C1A3-4009-A288-E2FF89E96FA0}"
+    }
+  ],
+  "DocumentGroupContainers": [
+    {
+      "Orientation": 0,
+      "VerticalTabListWidth": 256,
+      "DocumentGroups": [
+        {
+          "DockedWidth": 200,
+          "SelectedChildIndex": 1,
+          "Children": [
+            {
+              "$type": "Document",
+              "DocumentIndex": 1,
+              "Title": "Program.cs",
+              "DocumentMoniker": "C:\\Users\\bswjt\\source\\repos\\AWS\\WebApplication1\\Program.cs",
+              "RelativeDocumentMoniker": "Program.cs",
+              "ToolTip": "C:\\Users\\bswjt\\source\\repos\\AWS\\WebApplication1\\Program.cs",
+              "RelativeToolTip": "Program.cs",
+              "ViewState": "AgIAABYAAAAAAAAAAAAcwCkAAAAxAAAAAAAAAA==",
+              "Icon": "ae27a6b0-e345-4288-96df-5eaf394ee369.000738|",
+              "WhenOpened": "2025-03-23T07:38:34.555Z",
+              "EditorCaption": ""
+            },
+            {
+              "$type": "Document",
+              "DocumentIndex": 0,
+              "Title": "OracleDataMigrationService.cs",
+              "DocumentMoniker": "C:\\Users\\bswjt\\source\\repos\\AWS\\WebApplication1\\OracleDataMigrationService.cs",
+              "RelativeDocumentMoniker": "OracleDataMigrationService.cs",
+              "ToolTip": "C:\\Users\\bswjt\\source\\repos\\AWS\\WebApplication1\\OracleDataMigrationService.cs",
+              "RelativeToolTip": "OracleDataMigrationService.cs",
+              "ViewState": "AgIAAEIAAAAAAAAAAAAYwCsAAAAhAAAAAAAAAA==",
+              "Icon": "ae27a6b0-e345-4288-96df-5eaf394ee369.000738|",
+              "WhenOpened": "2025-03-23T07:37:39.895Z",
+              "EditorCaption": ""
+            },
+            {
+              "$type": "Document",
+              "DocumentIndex": 2,
+              "Title": "TableMigrationConfig.cs",
+              "DocumentMoniker": "C:\\Users\\bswjt\\source\\repos\\AWS\\WebApplication1\\TableMigrationConfig.cs",
+              "RelativeDocumentMoniker": "TableMigrationConfig.cs",
+              "ToolTip": "C:\\Users\\bswjt\\source\\repos\\AWS\\WebApplication1\\TableMigrationConfig.cs",
+              "RelativeToolTip": "TableMigrationConfig.cs",
+              "ViewState": "AgIAAAAAAAAAAAAAAAAAAAgAAAAAAAAAAAAAAA==",
+              "Icon": "ae27a6b0-e345-4288-96df-5eaf394ee369.000738|",
+              "WhenOpened": "2025-03-23T07:37:13.644Z"
+            },
+            {
+              "$type": "Document",
+              "DocumentIndex": 3,
+              "Title": "Migrationconfig.json",
+              "DocumentMoniker": "C:\\Users\\bswjt\\source\\repos\\AWS\\WebApplication1\\Migrationconfig.json",
+              "RelativeDocumentMoniker": "Migrationconfig.json",
+              "ToolTip": "C:\\Users\\bswjt\\source\\repos\\AWS\\WebApplication1\\Migrationconfig.json",
+              "RelativeToolTip": "Migrationconfig.json",
+              "ViewState": "AgIAAAAAAAAAAAAAAAAAAA8AAAAFAAAAAAAAAA==",
+              "Icon": "ae27a6b0-e345-4288-96df-5eaf394ee369.001642|",
+              "WhenOpened": "2025-03-23T07:36:41.437Z"
+            }
+          ]
+        }
+      ]
+    }
+  ]
+}

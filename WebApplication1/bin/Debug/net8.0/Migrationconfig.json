@@ -1,0 +1,30 @@
+﻿{
+  "ConnectionStrings": {
+    "Db1Connection": "User Id=source_user;Password=source_pwd;Data Source=source_db",
+    "Db2Connection": "User Id=target_user;Password=target_pwd;Data Source=target_db"
+  },
+  "TableMigrations": [
+    {
+      "SourceTableName": "Table1",
+      "TargetTableName": "Table1",
+      "ColumnMappings": {
+        "Id": "Id",
+        "Name": "Name",
+        "Active": "IsActive"
+      }
+    },
+    {
+      "SourceTableName": "Table2",
+      "TargetTableName": "Table2",
+      "ColumnMappings": {
+        "Id": "Id",
+        "Title": "Title",
+        "Active": "IsActive"
+      }
+    },
+    {
+      "SourceTableName": "Table3",
+      "TargetTableName": "Table3"
+    }
+  ]
+}
