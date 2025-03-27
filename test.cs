@@ -1,60 +1,106 @@
-using System;
-using System.IO;
-using Avro;
-using Avro.IO;
-using Avro.Specific;
-
-public class Employee
-{
-    public int Id { get; set; }
-    public string Name { get; set; }
-}
+using Newtonsoft.Json.Linq;
 
 class Program
 {
-    static void Main(string[] args)
+    static void Main()
     {
-        // Avro schema for Employee
-        var schemaJson = @"
-        {
-          ""type"": ""record"",
-          ""name"": ""Employee"",
-          ""fields"": [
-            { ""name"": ""Id"", ""type"": ""int"" },
-            { ""name"": ""Name"", ""type"": ""string"" }
-          ]
-        }";
+        string jsonFilePath = "conditions.json";
+        string json = File.ReadAllText(jsonFilePath);
+        string targetName = "Tpp";
 
-        // Parse the schema
-        var schema = (RecordSchema)Schema.Parse(schemaJson);
-
-        // Create an instance of Employee
-        var employee = new Employee
+        var inputValues = new Dictionary<string, object>
         {
-            Id = 1,
-            Name = "Alice"
+            { "type", "test" },
+            { "paymenttype", 2 },
+            { "city", 5 }
         };
 
-        // Validate the Employee instance against the schema
-        ValidateEmployee(schema, employee);
+        int? matchingRuleId = ExecuteAny(json, targetName, inputValues);
+        if (matchingRuleId.HasValue)
+        {
+            Console.WriteLine("Match Found: Rule ID = " + matchingRuleId.Value);
+        }
+        else
+        {
+            Console.WriteLine("No Match Found");
+        }
+
+        var unmatchedRuleIds = ExecuteAll(json, targetName, inputValues);
+        if (unmatchedRuleIds.Count != 0)
+        {
+            Console.WriteLine("Unmatched Rule IDs: " + string.Join(", ", unmatchedRuleIds));
+        }
+        else
+        {
+            Console.WriteLine("All rules matched");
+        }
     }
 
-    static void ValidateEmployee(RecordSchema schema, Employee employee)
+    static int? ExecuteAny(string json, string targetName, Dictionary<string, object> inputValues)
     {
-        try
+        var rulesArray = GetRulesArray(json, targetName);
+        if (rulesArray != null)
         {
-            // Serialize the Employee instance
-            using (var stream = new MemoryStream())
+            foreach (var rule in rulesArray)
             {
-                var encoder = new BinaryEncoder(stream);
-                var writer = new SpecificWriter<Employee>(schema);
-                writer.Write(employee, encoder); // Validate here
-                Console.WriteLine("Employee data is valid.");
+                var filteredConditionDict = GetFilteredConditionDict(rule);
+                if (MatchesCondition(filteredConditionDict, inputValues))
+                {
+                    return rule["ruleId"]?.ToObject<int>();
+                }
             }
         }
-        catch (Exception ex)
+
+        return null;
+    }
+
+    static List<int> ExecuteAll(string json, string targetName, Dictionary<string, object> inputValues)
+    {
+        var unmatchedRuleIds = new List<int>();
+        var rulesArray = GetRulesArray(json, targetName);
+        if (rulesArray != null)
         {
-            Console.WriteLine($"Validation failed: {ex.Message}");
+            foreach (var rule in rulesArray)
+            {
+                var filteredConditionDict = GetFilteredConditionDict(rule);
+                if (!MatchesCondition(filteredConditionDict, inputValues))
+                {
+                    var ruleId = rule["ruleId"]?.ToObject<int>();
+                    if (ruleId.HasValue)
+                    {
+                        unmatchedRuleIds.Add(ruleId.Value);
+                    }
+                }
+            }
         }
+
+        return unmatchedRuleIds;
+    }
+
+    private static JArray? GetRulesArray(string json, string targetName)
+    {
+        var jsonObject = JObject.Parse(json);
+
+        if (jsonObject["conditions"] is JArray conditionsArray)
+        {
+            var targetCondition = conditionsArray.FirstOrDefault(c => c["name"]?.ToString() == targetName);
+            if (targetCondition != null && targetCondition["rules"] is JArray rulesArray)
+                return rulesArray;
+        }
+        return null;
+    }
+
+    static Dictionary<string, object> GetFilteredConditionDict(JToken rule)
+    {
+        var conditionDict = rule.ToObject<Dictionary<string, object>>() ?? new Dictionary<string, object>();
+        var ignoredProps = rule["ignoredProps"]?.ToObject<List<string>>() ?? new List<string>();
+        return conditionDict
+            .Where(pair => !ignoredProps.Contains(pair.Key))
+            .ToDictionary(pair => pair.Key, pair => pair.Value);
+    }
+
+    static bool MatchesCondition(Dictionary<string, object> condition, Dictionary<string, object> input)
+    {
+        return condition.All(pair => input.TryGetValue(pair.Key, out var value) && value is not null && Equals(value.ToString(), pair.Value.ToString()));
     }
 }
