@@ -1,4 +1,12 @@
-using Newtonsoft.Json.Linq;
+using Newtonsoft.Json;
+using System.Collections.Generic;
+using System.IO;
+
+public class RuleEngine
+{
+    public string match { get; set; }
+    public List<Dictionary<string, object>> rules { get; set; }
+}
 
 class Program
 {
@@ -6,6 +14,7 @@ class Program
     {
         string jsonFilePath = "conditions.json";
         string json = File.ReadAllText(jsonFilePath);
+        IDictionary<string, RuleEngine> ruleEngines = JsonConvert.DeserializeObject<IDictionary<string, RuleEngine>>(json);
         string targetName = "Tpp";
 
         var inputValues = new Dictionary<string, object>
@@ -15,86 +24,75 @@ class Program
             { "city", 5 }
         };
 
-        int? matchingRuleId = ExecuteAny(json, targetName, inputValues);
-        if (matchingRuleId.HasValue)
+        if (!ruleEngines.TryGetValue(targetName, out var targetObject))
         {
-            Console.WriteLine("Match Found: Rule ID = " + matchingRuleId.Value);
-        }
-        else
-        {
-            Console.WriteLine("No Match Found");
+            Console.WriteLine("Target not found.");
+            return;
         }
 
-        var unmatchedRuleIds = ExecuteAll(json, targetName, inputValues);
-        if (unmatchedRuleIds.Count != 0)
+        string matchType = targetObject.match;
+        if (matchType == "Any")
         {
-            Console.WriteLine("Unmatched Rule IDs: " + string.Join(", ", unmatchedRuleIds));
+            int? matchingRuleId = ExecuteAny(targetObject, inputValues);
+            if (matchingRuleId.HasValue)
+            {
+                Console.WriteLine("Match Found: Rule ID = " + matchingRuleId.Value);
+            }
+            else
+            {
+                Console.WriteLine("No Match Found");
+            }
         }
-        else
+        else if (matchType == "All")
         {
-            Console.WriteLine("All rules matched");
+            var unmatchedRuleIds = ExecuteAll(targetObject, inputValues);
+            if (unmatchedRuleIds.Any())
+            {
+                Console.WriteLine("Unmatched Rule IDs: " + string.Join(", ", unmatchedRuleIds));
+            }
+            else
+            {
+                Console.WriteLine("All rules matched");
+            }
         }
     }
 
-    static int? ExecuteAny(string json, string targetName, Dictionary<string, object> inputValues)
+    static int? ExecuteAny(RuleEngine ruleEngine, Dictionary<string, object> inputValues)
     {
-        var rulesArray = GetRulesArray(json, targetName);
-        if (rulesArray != null)
+        foreach (var rule in ruleEngine.rules)
         {
-            foreach (var rule in rulesArray)
+            var filteredConditionDict = GetFilteredConditionDict(rule);
+            if (MatchesCondition(filteredConditionDict, inputValues))
             {
-                var filteredConditionDict = GetFilteredConditionDict(rule);
-                if (MatchesCondition(filteredConditionDict, inputValues))
-                {
-                    return rule["ruleId"]?.ToObject<int>();
-                }
+                var ruleId = Convert.ToInt32(rule["ruleId"]);
+                return ruleId <= 0 ? null : ruleId;
             }
         }
-
         return null;
     }
 
-    static List<int> ExecuteAll(string json, string targetName, Dictionary<string, object> inputValues)
+    static List<int> ExecuteAll(RuleEngine ruleEngine, Dictionary<string, object> inputValues)
     {
         var unmatchedRuleIds = new List<int>();
-        var rulesArray = GetRulesArray(json, targetName);
-        if (rulesArray != null)
+        foreach (var rule in ruleEngine.rules)
         {
-            foreach (var rule in rulesArray)
+            var filteredConditionDict = GetFilteredConditionDict(rule);
+            if (!MatchesCondition(filteredConditionDict, inputValues))
             {
-                var filteredConditionDict = GetFilteredConditionDict(rule);
-                if (!MatchesCondition(filteredConditionDict, inputValues))
+                var ruleId = Convert.ToInt32(rule["ruleId"]);
+                if (ruleId > 0)
                 {
-                    var ruleId = rule["ruleId"]?.ToObject<int>();
-                    if (ruleId.HasValue)
-                    {
-                        unmatchedRuleIds.Add(ruleId.Value);
-                    }
+                    unmatchedRuleIds.Add(ruleId);
                 }
             }
         }
-
         return unmatchedRuleIds;
     }
 
-    private static JArray? GetRulesArray(string json, string targetName)
+    static Dictionary<string, object> GetFilteredConditionDict(Dictionary<string, object> rule)
     {
-        var jsonObject = JObject.Parse(json);
-
-        if (jsonObject["conditions"] is JArray conditionsArray)
-        {
-            var targetCondition = conditionsArray.FirstOrDefault(c => c["name"]?.ToString() == targetName);
-            if (targetCondition != null && targetCondition["rules"] is JArray rulesArray)
-                return rulesArray;
-        }
-        return null;
-    }
-
-    static Dictionary<string, object> GetFilteredConditionDict(JToken rule)
-    {
-        var conditionDict = rule.ToObject<Dictionary<string, object>>() ?? new Dictionary<string, object>();
-        var ignoredProps = rule["ignoredProps"]?.ToObject<List<string>>() ?? new List<string>();
-        return conditionDict
+        var ignoredProps = rule["ignoredProps"] as List<object> ?? [];
+        return rule
             .Where(pair => !ignoredProps.Contains(pair.Key))
             .ToDictionary(pair => pair.Key, pair => pair.Value);
     }
@@ -104,3 +102,4 @@ class Program
         return condition.All(pair => input.TryGetValue(pair.Key, out var value) && value is not null && Equals(value.ToString(), pair.Value.ToString()));
     }
 }
+
