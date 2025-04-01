@@ -1,105 +1,57 @@
-using Newtonsoft.Json;
-using System.Collections.Generic;
+using System;
 using System.IO;
-
-public class RuleEngine
-{
-    public string match { get; set; }
-    public List<Dictionary<string, object>> rules { get; set; }
-}
+using System.Text.Json;
+using System.Collections.Generic;
+using System.Threading.Tasks;
+using RulesEngine.Models;
+using RulesEngine;
 
 class Program
 {
-    static void Main()
+    static async Task Main()
     {
-        string jsonFilePath = "conditions.json";
-        string json = File.ReadAllText(jsonFilePath);
-        IDictionary<string, RuleEngine> ruleEngines = JsonConvert.DeserializeObject<IDictionary<string, RuleEngine>>(json);
-        string targetName = "Tpp";
+        // Load rules from JSON file
+        string json = File.ReadAllText("rules.json");
+        var workflows = JsonSerializer.Deserialize<List<Workflow>>(json);
 
-        var inputValues = new Dictionary<string, object>
+        if (workflows == null) return;
+
+        RulesEngine rulesEngine = new RulesEngine(workflows.ToArray());
+
+        // Sample input data
+        var inputData = new Dictionary<string, object>
         {
             { "type", "test" },
             { "paymenttype", 2 },
-            { "city", 5 }
+            { "city", 5 },
+            { "state", "3" }
         };
 
-        if (!ruleEngines.TryGetValue(targetName, out var targetObject))
+        // Select client workflow (e.g., "Tpp" or "Abc")
+        string clientName = "Tpp";  // Change this to test "Abc"
+        var workflow = workflows.Find(w => w.WorkflowName == clientName);
+
+        if (workflow == null)
         {
-            Console.WriteLine("Target not found.");
+            Console.WriteLine($"No rules found for client: {clientName}");
             return;
         }
 
-        string matchType = targetObject.match;
-        if (matchType == "Any")
+        // Check rules one by one and stop after first success
+        foreach (var rule in workflow.Rules)
         {
-            int? matchingRuleId = ExecuteAny(targetObject, inputValues);
-            if (matchingRuleId.HasValue)
-            {
-                Console.WriteLine("Match Found: Rule ID = " + matchingRuleId.Value);
-            }
-            else
-            {
-                Console.WriteLine("No Match Found");
-            }
-        }
-        else if (matchType == "All")
-        {
-            var unmatchedRuleIds = ExecuteAll(targetObject, inputValues);
-            if (unmatchedRuleIds.Any())
-            {
-                Console.WriteLine("Unmatched Rule IDs: " + string.Join(", ", unmatchedRuleIds));
-            }
-            else
-            {
-                Console.WriteLine("All rules matched");
-            }
-        }
-    }
+            RuleResultTree[] result = await rulesEngine.ExecuteAllRulesAsync(clientName, inputData);
 
-    static int? ExecuteAny(RuleEngine ruleEngine, Dictionary<string, object> inputValues)
-    {
-        foreach (var rule in ruleEngine.rules)
-        {
-            var filteredConditionDict = GetFilteredConditionDict(rule);
-            if (MatchesCondition(filteredConditionDict, inputValues))
+            foreach (var r in result)
             {
-                var ruleId = Convert.ToInt32(rule["ruleId"]);
-                return ruleId <= 0 ? null : ruleId;
-            }
-        }
-        return null;
-    }
-
-    static List<int> ExecuteAll(RuleEngine ruleEngine, Dictionary<string, object> inputValues)
-    {
-        var unmatchedRuleIds = new List<int>();
-        foreach (var rule in ruleEngine.rules)
-        {
-            var filteredConditionDict = GetFilteredConditionDict(rule);
-            if (!MatchesCondition(filteredConditionDict, inputValues))
-            {
-                var ruleId = Convert.ToInt32(rule["ruleId"]);
-                if (ruleId > 0)
+                if (r.IsSuccess)
                 {
-                    unmatchedRuleIds.Add(ruleId);
+                    Console.WriteLine($"Rule Passed: {r.Rule.SuccessEvent}");
+                    return; // Stop execution after first match
                 }
             }
         }
-        return unmatchedRuleIds;
-    }
 
-    static Dictionary<string, object> GetFilteredConditionDict(Dictionary<string, object> rule)
-    {
-        var ignoredProps = rule["ignoredProps"] as List<object> ?? [];
-        return rule
-            .Where(pair => !ignoredProps.Contains(pair.Key))
-            .ToDictionary(pair => pair.Key, pair => pair.Value);
-    }
-
-    static bool MatchesCondition(Dictionary<string, object> condition, Dictionary<string, object> input)
-    {
-        return condition.All(pair => input.TryGetValue(pair.Key, out var value) && value is not null && Equals(value.ToString(), pair.Value.ToString()));
+        Console.WriteLine("No rules matched.");
     }
 }
-
