@@ -3,7 +3,7 @@ using NRules.Fluent;
 using NRules.Fluent.Dsl;
 using System;
 using System.Collections.Generic;
-
+  <PackageReference Include="NRules" Version="1.0.2" />
 // Domain model classes
 public class Rule
 {
