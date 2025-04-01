@@ -1,51 +1,37 @@
-{
-  "conditions": [
-    {
-      "name": "Tpp",
-      "match": "All",
-      "rules": [
-        {
-          "ruleId": 1,
-          "type": "test",
-          "paymenttype": 2,
-          "ignoredProps": [ "ruleId", "ignoredProps" ]
-        },
-        {
-          "ruleId": 2,
-          "type": "test",
-          "paymenttype": 2,
-          "city": 5,
-          "ignoredProps": [ "ruleId", "ignoredProps" ]
-        },
-        {
-          "ruleId": 3,
-          "type": "test",
-          "paymenttype": 2,
-          "city": 5,
-          "state": "3",
-          "ignoredProps": [ "ruleId", "ignoredProps" ]
-        }
-      ]
-    },
-    {
-      "name": "Abc",
-      "match": "Any",
-      "rules": [
-        {
-          "ruleId": 4,
-          "type": "test",
-          "paymenttype": 1,
-          "city": 4,
-          "ignoredProps": [ "ruleId", "ignoredProps" ]
-        },
-        {
-          "ruleId": 5,
-          "type": "test",
-          "paymenttype": 3,
-          "state": "2",
-          "ignoredProps": [ "ruleId", "ignoredProps" ]
-        }
-      ]
-    }
-  ]
-}
+[
+  {
+    "WorkflowName": "Tpp",
+    "Rules": [
+      {
+        "RuleName": "Rule1",
+        "Expression": "input.type == 'test' && input.paymenttype == 2",
+        "SuccessEvent": "Rule 1 Passed"
+      },
+      {
+        "RuleName": "Rule2",
+        "Expression": "input.type == 'test' && input.paymenttype == 2 && input.city == 5",
+        "SuccessEvent": "Rule 2 Passed"
+      },
+      {
+        "RuleName": "Rule3",
+        "Expression": "input.type == 'test' && input.paymenttype == 2 && input.city == 5 && input.state == '3'",
+        "SuccessEvent": "Rule 3 Passed"
+      }
+    ]
+  },
+  {
+    "WorkflowName": "Abc",
+    "Rules": [
+      {
+        "RuleName": "Rule4",
+        "Expression": "input.type == 'test' && input.paymenttype == 1 && input.city == 4",
+        "SuccessEvent": "Rule 4 Passed"
+      },
+      {
+        "RuleName": "Rule5",
+        "Expression": "input.type == 'test' && input.paymenttype == 3 && input.state == '2'",
+        "SuccessEvent": "Rule 5 Passed"
+      }
+    ]
+  }
+]
