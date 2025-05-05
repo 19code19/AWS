@@ -1,151 +1,70 @@
-using NRules;
-using NRules.Fluent;
-using NRules.Fluent.Dsl;
-using System;
-using System.Collections.Generic;
-  <PackageReference Include="NRules" Version="1.0.2" />
-// Domain model classes
-public class Rule
-{
-    public string Type { get; set; }
-    public int Paymenttype { get; set; }
-    public int? City { get; set; }
-    public string State { get; set; }
-    public string Status { get; set; } // Added status to track if the rule passed or failed
-}
+using OfficeOpenXml;
+using System.Reflection;
 
-public class RuleSet
+namespace EPPLUS.Excel
 {
-    public List<Rule> Rules { get; set; }
-}
-
-public class RuleData
-{
-    public RuleSet Tpp { get; set; }
-    public RuleSet Abc { get; set; }
-}
-
-public class Program
-{
-    public static void Main(string[] args)
+    internal class Program
     {
-        // 1. Create a RuleRepository to load the rules
-        var repository = new RuleRepository();
-
-        // 2. Load the rules
-        repository.Load(x => x.From(typeof(TppRules), typeof(AbcRules)));
-
-        // 3. Compile the rules
-        var factory = repository.Compile();
-
-        // 4. Create a session
-        var session = factory.CreateSession();
-
-        // 5. Sample RuleData
-        var ruleData = new RuleData
+        static void Main(string[] args)
         {
-            Tpp = new RuleSet
+            ExcelPackage.LicenseContext = LicenseContext.NonCommercial;
+            var people = ReadExcelToList<Person>("Book1.xlsx");
+            Console.WriteLine("Hello, World!");
+        }
+
+        public static List<T> ReadExcelToList<T>(string filePath) where T : new()
+        {
+            FileInfo fileInfo = new(filePath);
+            using ExcelPackage package = new(fileInfo);
+            ExcelWorksheet worksheet = package.Workbook.Worksheets[0];
+            if (worksheet.Dimension == null) return [];
+
+            var headers = GetHeaders(worksheet);
+            return [.. Enumerable.Range(2, worksheet.Dimension.End.Row - 1).Select(row => CreateObjectFromRow<T>(worksheet, headers, row))];
+        }
+
+        private static Dictionary<int, string> GetHeaders(ExcelWorksheet worksheet)
+        {
+            return Enumerable.Range(1, worksheet.Dimension.End.Column)
+                             .ToDictionary(
+                                 col => col,
+                                 col => worksheet.Cells[1, col].Value?.ToString()?.Trim() ?? string.Empty
+                             );
+        }
+
+        private static T CreateObjectFromRow<T>(ExcelWorksheet worksheet, Dictionary<int, string> headers, int row) where T : new()
+        {
+            T obj = new T();
+            foreach (var (col, header) in headers)
             {
-                Rules = new List<Rule>
+                var property = typeof(T).GetProperty(header, BindingFlags.Public | BindingFlags.Instance | BindingFlags.IgnoreCase);
+                if (property != null && property.CanWrite)
                 {
-                    new Rule { Type = "test", Paymenttype = 2 },
-                    new Rule { Type = "test", Paymenttype = 2, City = 5 },
-                    new Rule { Type = "test", Paymenttype = 2, City = 5, State = "3" }
-                }
-            },
-            Abc = new RuleSet
-            {
-                Rules = new List<Rule>
-                {
-                    new Rule { Type = "test", Paymenttype = 1, City = 4 },
-                    new Rule { Type = "test", Paymenttype = 3, State = "2" }
+                    var cellValue = worksheet.Cells[row, col].Value;
+                    if (cellValue != null)
+                    {
+                        try
+                        {
+                            object convertedValue = Convert.ChangeType(cellValue, property.PropertyType);
+                            property.SetValue(obj, convertedValue);
+                        }
+                        catch
+                        {
+                            // Handle conversion errors silently
+                        }
+                    }
                 }
             }
-        };
-
-        // 6. Insert the rule data into the session
-        session.Insert(ruleData);
-
-        // 7. Fire the rules
-        session.Fire();
-
-        // Print out the rule statuses
-        foreach (var rule in ruleData.Tpp.Rules)
-        {
-            Console.WriteLine($"Status: {rule.Status}");
-        }
-        foreach (var rule in ruleData.Abc.Rules)
-        {
-            Console.WriteLine($"Status: {rule.Status}");
+            return obj;
         }
     }
 }
 
-// Rule definitions
-public class TppRules : NRules.Fluent.Dsl.Rule
+
+
+public class Person
 {
-    public override void Define()
-    {
-        RuleData ruleData = null;
-
-        When()
-            .Match<RuleData>(() => ruleData, rd => rd.Tpp != null);
-
-        Then()
-            .Do(ctx => ProcessTppRules(ruleData));
-    }
-
-    private void ProcessTppRules(RuleData ruleData)
-    {
-        foreach (var rule in ruleData.Tpp.Rules)
-        {
-            // Evaluate the rule conditions
-            if (rule.Paymenttype == 2)
-            {
-                // Rule passed, update status to "Passed"
-                rule.Status = "Passed";
-                Console.WriteLine($"Paymenttype = {rule.Paymenttype}, City = {rule.City}, State = {rule.State}, Status = Passed");
-            }
-            else
-            {
-                // Rule failed, update status to "Failed"
-                rule.Status = "Failed";
-                Console.WriteLine($"Paymenttype = {rule.Paymenttype}, City = {rule.City}, State = {rule.State}, Status = Failed");
-            }
-        }
-    }
-}
-
-public class AbcRules : NRules.Fluent.Dsl.Rule
-{
-    public override void Define()
-    {
-        RuleData ruleData = null;
-
-        When()
-            .Match<RuleData>(() => ruleData, rd => rd.Abc != null);
-
-        Then()
-            .Do(ctx => ProcessAbcRules(ruleData));
-    }
-
-    private static void ProcessAbcRules(RuleData ruleData)
-    {
-        foreach (var rule in ruleData.Abc.Rules)
-        {
-            // Evaluate the rule conditions
-            if (rule.Paymenttype == 1)
-            {
-                // Rule passed, update status to "Passed"
-                rule.Status = "Passed";
-                Console.WriteLine($"Paymenttype = {rule.Paymenttype}, City = {rule.City}, State = {rule.State}, Status = Passed");
-            }
-            else
-            {
-                // Rule failed, update status to "Failed"
-                rule.Status = "Failed";
-                Console.WriteLine($"Paymenttype = {rule.Paymenttype}, City = {rule.City}, State = {rule.State}, Status = Failed");
-            }
-        }
-    }
+    public int Id { get; set; }
+    public string Name { get; set; }
+    public string City { get; set; }
 }
