@@ -1,79 +1,58 @@
-import com.zaxxer.hikari.HikariDataSource;
-import org.springframework.beans.factory.annotation.Value;
-import org.springframework.context.annotation.Bean;
-import org.springframework.context.annotation.Configuration;
+import java.net.URI;
+import java.net.http.HttpClient;
+import java.net.http.HttpRequest;
+import java.net.http.HttpResponse;
+import java.util.Optional;
 
-@Configuration
-public class DataSourceConfig {
+import com.fasterxml.jackson.core.type.TypeReference;
+import com.fasterxml.jackson.databind.ObjectMapper;
 
-    @Value("${spring.datasource.url}")
-    private String dbUrl;
+public class HttpService {
+    private final HttpClient client = HttpClient.newHttpClient();
+    private final ObjectMapper mapper = new ObjectMapper();
 
-    @Value("${spring.datasource.username}")
-    private String dbUser;
+    public <T> T sendRequest(
+            String url,
+            String method,
+            Optional<Object> body,
+            TypeReference<T> responseType
+    ) throws Exception {
 
-    @Value("${spring.datasource.password}")
-    private String dbPassword;
+        HttpRequest.Builder builder = HttpRequest.newBuilder()
+                .uri(URI.create(url))
+                .header("Content-Type", "application/json");
 
-    @Value("${spring.datasource.driver-class-name}")
-    private String driverClassName;
-
-    private HikariDataSource hikariDataSource;
-
-    @Bean
-    public HikariDataSource dataSource() {
-        hikariDataSource = new HikariDataSource();
-        hikariDataSource.setDriverClassName(driverClassName);
-        hikariDataSource.setJdbcUrl(dbUrl);
-        hikariDataSource.setUsername(dbUser);
-        hikariDataSource.setPassword(dbPassword);
-        return hikariDataSource;
-    }
-
-    /** Update HikariCP password dynamically */
-    public void updatePassword(String newPassword) {
-        if (hikariDataSource != null) {
-            hikariDataSource.getHikariConfigMXBean().setPassword(newPassword);
-            System.out.println("HikariCP password updated successfully!");
+        if (body.isPresent()) {
+            String json = mapper.writeValueAsString(body.get());
+            builder.method(method, HttpRequest.BodyPublishers.ofString(json));
+        } else {
+            builder.method(method, HttpRequest.BodyPublishers.noBody());
         }
+
+        HttpResponse<String> response = client.send(request, HttpResponse.BodyHandlers.ofString());
+
+        // convert JSON to object/list/etc.
+        return mapper.readValue(response.body(), responseType);
     }
 }
 
 
 
-import org.springframework.scheduling.annotation.Scheduled;
-import org.springframework.stereotype.Service;
+List<Employee> employees = httpService.sendRequest(
+    "http://localhost:5000/api/Employee",
+    "GET",
+    Optional.empty(),
+    new TypeReference<List<Employee>>() {}
+);
 
-@Service
-public class PasswordRefreshService {
 
-    private final DataSourceConfig dataSourceConfig;
 
-    public PasswordRefreshService(DataSourceConfig dataSourceConfig) {
-        this.dataSourceConfig = dataSourceConfig;
-    }
 
-    /** Fetch new password from Vault or internal store */
-    private String fetchNewPassword() {
-        // TODO: implement your secret retrieval logic
-        return "newPassword123"; 
-    }
+Employee emp = new Employee(1, "John Doe", "Developer", "IT");
 
-    /** Rotate password every 90 days */
-    @Scheduled(fixedRate = 90L * 24 * 60 * 60 * 1000) // 90 days in ms
-    public void refreshDatabasePassword() {
-        String newPassword = fetchNewPassword();
-        dataSourceConfig.updatePassword(newPassword);
-    }
-}
-import org.springframework.boot.SpringApplication;
-import org.springframework.boot.autoconfigure.SpringBootApplication;
-import org.springframework.scheduling.annotation.EnableScheduling;
-
-@SpringBootApplication
-@EnableScheduling
-public class MyApplication {
-    public static void main(String[] args) {
-        SpringApplication.run(MyApplication.class, args);
-    }
-}
+Employee created = httpService.sendRequest(
+    "http://localhost:5000/api/Employee",
+    "POST",
+    Optional.of(emp),
+    new TypeReference<Employee>() {}
+);
